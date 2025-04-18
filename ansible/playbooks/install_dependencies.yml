@@ -1,0 +1,14 @@
+---
+- name: Install Python Dependencies
+  hosts: microservices_servers
+  become: true
+  tasks:
+    - name: Ensure pip is installed
+      apt:
+        name: python3-pip
+        state: present
+
+    - name: Install Python Docker SDK
+      pip:
+        name: docker>=5.0.0
+        state: present

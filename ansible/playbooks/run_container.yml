@@ -1,0 +1,6 @@
+---
+- name: Deploy Microservices Application
+  hosts: microservices_servers
+  become: true
+  roles:
+    - docker_container
