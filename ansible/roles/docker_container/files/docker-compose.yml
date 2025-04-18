@@ -14,7 +14,7 @@ services:
       - "9411:9411"
 
   auth-api:
-    image: mag1305/auth-api:latest  # Reemplaza con tu usuario de Docker Hub
+    image: mag1305/auth-api:latest
     container_name: auth-api
     environment:
       - AUTH_API_PORT=8000
@@ -28,7 +28,7 @@ services:
       - zipkin
 
   users-api:
-    image: mag1305/users-api:latest  # Reemplaza con tu usuario de Docker Hub
+    image: mag1305/users-api:latest
     container_name: users-api
     environment:
       - JWT_SECRET=PRFT
@@ -40,7 +40,7 @@ services:
       - zipkin
 
   todos-api:
-    image: mag1305/todos-api:latest  # Reemplaza con tu usuario de Docker Hub
+    image: mag1305/todos-api:latest
     container_name: todos-api
     environment:
       - TODO_API_PORT=8082
@@ -56,7 +56,7 @@ services:
       - zipkin
 
   log-message-processor:
-    image: mag1305/log-message-processor:latest  # Reemplaza con tu usuario de Docker Hub
+    image: mag1305/log-message-processor:latest
     container_name: log-message-processor
     environment:
       - REDIS_HOST=redis
@@ -68,7 +68,7 @@ services:
       - zipkin
 
   frontend:
-    image: juanmadiaz45/microservice-app-example-frontend:latest # Reemplaza con tu usuario de Docker Hub
+    image: juanmadiaz45/microservice-app-example-frontend:latest
     container_name: frontend
     environment:
       - PORT=8080
