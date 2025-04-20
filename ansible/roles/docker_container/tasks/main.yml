@@ -33,8 +33,11 @@
 
 - name: Restart unhealthy containers
   shell: |
-    docker ps --filter "health=unhealthy" --format "{{.ID}}" | xargs --no-run-if-empty docker restart
+    docker ps --filter "health=unhealthy" --format "{{ '{{' }}.ID{{ '}}' }}" | xargs --no-run-if-empty docker restart
+  args:
+    executable: /bin/bash
   register: restart_output
+  changed_when: restart_output.stdout != ""
 
 - name: Show restart output
   debug:

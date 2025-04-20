@@ -11,7 +11,7 @@ variable "resource_group_name" {
 variable "storage_account_name" {
   type        = string
   description = "Name of the storage account for the function app"
-  default     = "microservicesfuncstorage"
+  default     = "msfuncdev"
 }
 
 variable "app_service_plan_name" {
