@@ -3,13 +3,13 @@
   file:
     path: /opt/microservices
     state: directory
-    mode: '0755'
+    mode: "0755"
 
 - name: Copy docker-compose file
   copy:
     src: docker-compose.yml
     dest: /opt/microservices/docker-compose.yml
-    mode: '0644'
+    mode: "0644"
 
 - name: Pull Docker images
   shell: docker-compose pull
@@ -30,3 +30,12 @@
 - name: Show deployment output
   debug:
     var: deploy_output.stdout_lines
+
+- name: Restart unhealthy containers
+  shell: |
+    docker ps --filter "health=unhealthy" --format "{{.ID}}" | xargs --no-run-if-empty docker restart
+  register: restart_output
+
+- name: Show restart output
+  debug:
+    var: restart_output.stdout_lines

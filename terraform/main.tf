@@ -20,7 +20,7 @@ module "networking" {
 }
 
 module "vm" {
-  source = "./modules/vm"
+  source = "./modules/microservices-vm"
 
   location            = azurerm_resource_group.microservicesrg.location
   resource_group_name = azurerm_resource_group.microservicesrg.name
@@ -29,4 +29,14 @@ module "vm" {
   vm_size             = var.vm_size
   admin_username      = var.admin_username
   admin_password      = var.admin_password
+}
+
+module "function_app" {
+  source = "./modules/function-app"
+
+  location            = azurerm_resource_group.microservicesrg.location
+  resource_group_name = azurerm_resource_group.microservicesrg.name
+  storage_account_name = "${lower(replace(var.resource_group_name, "-", ""))}funcstorage"
+  function_app_name   = "${var.resource_group_name}-circuit-breaker"
+  microservices_vm_ip = module.vm.public_ip
 }

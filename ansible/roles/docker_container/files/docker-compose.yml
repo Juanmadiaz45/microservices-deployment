@@ -26,6 +26,12 @@ services:
     depends_on:
       - users-api
       - zipkin
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   users-api:
     image: mag1305/users-api:latest
@@ -38,6 +44,12 @@ services:
       - "8083:8080"
     depends_on:
       - zipkin
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   todos-api:
     image: mag1305/todos-api:latest
@@ -54,6 +66,12 @@ services:
     depends_on:
       - redis
       - zipkin
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   log-message-processor:
     image: mag1305/log-message-processor:latest

@@ -1,0 +1,16 @@
+{
+  "name": "microservices-circuit-breaker",
+  "version": "1.0.0",
+  "description": "Circuit Breaker pattern implementation for microservices architecture",
+  "scripts": {
+    "start": "func start",
+    "test": "echo \"No test specified\""
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "opossum": "^7.1.0"
+  },
+  "devDependencies": {
+    "azure-functions-core-tools": "^4.x"
+  }
+}
