@@ -36,7 +36,7 @@ module "function_app" {
 
   location            = azurerm_resource_group.microservicesrg.location
   resource_group_name = azurerm_resource_group.microservicesrg.name
-  storage_account_name = "${lower(replace(var.resource_group_name, "-", ""))}funcstorage"
+  storage_account_name = "${lower(replace(var.resource_group_name, "-", ""))}funcstor"
   function_app_name   = "${var.resource_group_name}-circuit-breaker"
   microservices_vm_ip = module.vm.public_ip
 }

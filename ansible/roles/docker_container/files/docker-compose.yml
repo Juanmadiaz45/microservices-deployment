@@ -74,7 +74,7 @@ services:
       start_period: 40s
 
   log-message-processor:
-    image: mag1305/log-message-processor:latest
+    image: mag1305/log-processor:latest
     container_name: log-message-processor
     environment:
       - REDIS_HOST=redis
