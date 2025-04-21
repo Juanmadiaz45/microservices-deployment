@@ -1,0 +1,68 @@
+jenkins:
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: admin
+          password: admin
+
+  authorizationStrategy:
+    globalMatrix:
+      entries:
+        - group:
+            name: "anonymous"
+            permissions:
+              - "Overall/Read"
+
+        - group:
+            name: "authenticated"
+            permissions:
+              - "Overall/Administer"
+
+        - user:
+            name: "admin"
+            permissions:
+              - "Overall/Administer"
+
+credentials:
+  system:
+    domainCredentials:
+      - credentials:
+          - usernamePassword:
+              scope: GLOBAL
+              id: "{{ credentials_id }}"
+              username: "{{ repo_owner }}"
+              password: "${GITHUB_TOKEN}"
+              description: "GitHub token for API access"
+          - string:
+              scope: GLOBAL
+              id: "{{ sonar_credentials_id }}"
+              secret: "{{ sonar_token }}"
+              description: "Sonar token for API access"
+
+tool:
+  sonarRunnerInstallation:
+    installations:
+      - name: "SonarQube Scanner"
+        properties:
+          - installSource:
+              installers:
+                - sonarRunnerInstaller:
+                    id: "7.1.0.4889"
+
+unclassified:
+  githubpluginconfig:
+    configs:
+      - name: "GitHub"
+        apiUrl: "https://api.github.com"
+        credentialsId: "github-token"
+        manageHooks: true
+  location:
+    url: "{{ jenkins_url }}"
+    adminAddress: "ricardiox2000@gmail.com"
+  sonarGlobalConfiguration:
+    installations:
+      - credentialsId: "{{ sonar_credentials_id }}"
+        name: "SonarQube"
+        serverUrl: "http://{{ ansible_host }}:9000"
+      

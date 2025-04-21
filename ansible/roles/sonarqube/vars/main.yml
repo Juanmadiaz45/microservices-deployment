@@ -1,0 +1,1 @@
+sonar_base_url: "http://{{ ansible_host }}:9000"

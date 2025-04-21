@@ -1,0 +1,43 @@
+---
+# tasks file for roles/sonar_config
+- name: Reiniciar la máquina
+  reboot:
+    msg: "Reiniciando para aplicar grupo docker al usuario"
+    pre_reboot_delay: 5
+    post_reboot_delay: 15
+    reboot_timeout: 300
+
+- name: Crear la carpeta si no existe
+  file:
+    path: /home/{{ ansible_user }}/sonar
+    state: directory
+    mode: "0755"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+
+# Copiar archivo docker-compose-sonar-dind.yml
+- name: Copiar archivo docker-compose-sonar.yml como plantilla
+  template:
+    src: docker-compose-sonar.yml.j2
+    dest: /home/{{ ansible_user }}/sonar/docker-compose-sonar.yml
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0644"
+
+# Copiar archivo de configuración jenkins.yml
+- name: Copiar archivo sonar.properties como plantilla
+  template:
+    src: sonar.properties.j2
+    dest: /home/{{ ansible_user }}/sonar/sonar.properties
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0644"
+
+# Ejecutar un archivo docker-compose.yml
+- name: Ejecutar docker-compose.yml
+  command: docker-compose -f docker-compose-sonar.yml up -d
+  args:
+    chdir: /home/{{ ansible_user }}/sonar/
+  become: true
+  become_user: "{{ ansible_user }}"
+  become_method: su

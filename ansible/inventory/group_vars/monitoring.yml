@@ -1,0 +1,12 @@
+---
+# Grafana configuration
+grafana_admin_username: "admin"
+grafana_admin_password: "{{ lookup('file', 'secrets.yml') | from_yaml | attr('admin_password') }}"
+
+# Prometheus configuration
+prometheus_retention_days: 15
+prometheus_scrape_interval: "15s"
+
+# Alert manager configuration (optional)
+alert_manager_email: "alerts@example.com"
+alert_manager_smtp_password: "{{ lookup('file', 'secrets.yml') | from_yaml | attr('alert_manager_smtp_password', 'default_password') }}"

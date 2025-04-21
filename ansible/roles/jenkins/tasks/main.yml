@@ -1,0 +1,63 @@
+---
+# tasks file for ./roles/jenkins_config
+
+# Creación de carpetas
+- name: Crear la carpeta si no existe
+  file:
+    path: /home/{{ ansible_user }}/jenkins
+    state: directory
+    mode: "0755"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+
+- name: Crear la carpeta si no existe
+  file:
+    path: /home/{{ ansible_user }}/jenkins/config
+    state: directory
+    mode: "0755"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+
+# Copiar archivo docker-compose-jenkins-dind.yml
+- name: Copiar archivo docker-compose.yml
+  copy:
+    src: docker-compose-jenkins-dind.yml
+    dest: /home/{{ ansible_user }}/jenkins/docker-compose-jenkins-dind.yml
+
+# Copiar mi imagen de Jenkins customizada
+- name: Copiar archivo Dockerfile.jenkins
+  copy:
+    src: Dockerfile.jenkins
+    dest: /home/{{ ansible_user }}/jenkins/Dockerfile.jenkins
+
+# Copiar archivo de configuración jenkins.yml
+- name: Copiar archivo jenkins.yml como plantilla
+  template:
+    src: config/jenkins.yml.j2
+    dest: /home/{{ ansible_user }}/jenkins/config/jenkins.yml
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0644"
+
+# Copiar archivo de configuración jenkins.yml
+- name: Copiar archivo multibranch-pipeline.groovy como plantilla
+  template:
+    src: config/multibranch-pipeline.groovy.j2
+    dest: /home/{{ ansible_user }}/jenkins/multibranch-pipeline.groovy
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0644"
+
+# Jenkins URL
+- name: Mostrar jenkins_url para depuración
+  debug:
+    msg: "Jenkins estará en {{ jenkins_url }}"
+
+# Ejecutar un archivo docker-compose.yml
+- name: Ejecutar docker-compose.yml
+  command: docker-compose -f docker-compose-jenkins-dind.yml up -d
+  args:
+    chdir: /home/{{ ansible_user }}/jenkins/
+  become: true
+  become_user: "{{ ansible_user }}"
+  become_method: su
