@@ -19,14 +19,14 @@ echo "🚢 Desplegando microservicios..."
 ansible-playbook -i inventory/hosts.ini playbooks/run_container.yml
 
 # Obtener la IP de CI/Jenkins desde el archivo secrets.yml
-ci_ip=$(grep "ci_vm_ip" inventory/secrets.yml | awk -F': ' '{print $2}' | tr -d ' ')
+ci_vm_ip=$(grep "ci_vm_ip" inventory/secrets.yml | awk -F': ' '{print $2}' | tr -d ' ')
 
-if [[ -z "$ci_ip" ]]; then
+if [[ -z "$ci_vm_ip" ]]; then
   echo "❌ No se encontró la IP de la VM de CI en inventory/secrets.yml"
   exit 1
 fi
 
-echo "🔍 Usando IP de CI/Jenkins: $ci_ip"
+echo "🔍 Usando IP de CI/Jenkins: $ci_vm_ip"
 
 # Implementar Jenkins
 echo "🛠️ Desplegando Jenkins..."
