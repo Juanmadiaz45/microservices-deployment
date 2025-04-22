@@ -5,13 +5,8 @@
       "type": "httpTrigger",
       "direction": "in",
       "name": "req",
-      "methods": [
-        "get",
-        "post",
-        "put",
-        "delete"
-      ],
-      "route": "{service}/{*path}"
+      "methods": ["get", "post", "put", "delete"],
+      "route": "users/{*path}"
     },
     {
       "type": "http",
