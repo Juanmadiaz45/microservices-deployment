@@ -94,6 +94,14 @@ function generateFallbackResponse(service) {
           circuitBreaker: "open"
         }
       };
+    case 'frontend':
+      return {
+        status: 503,
+        body: { 
+          error: "Frontend service is temporarily unavailable",
+          circuitBreaker: "open"
+        }
+      };
   }
 }
 
