@@ -37,3 +37,7 @@ override.tf.json
 terraform.rc
 
 .terraform.lock.hcl
+
+modules/function-app/deploy/**
+modules/function-app/deploy/
+modules/function-app/function-app.zip

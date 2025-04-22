@@ -112,9 +112,15 @@ module.exports = async function (context, req) {
       return;
     }
     
+    // Log para debugging
+    context.log(`Requested service: ${service}, path: ${path}, method: ${method}`);
+    context.log(`Available services: ${JSON.stringify(SERVICE_PORTS)}`);
+    context.log(`Microservices VM IP: ${VM_IP}`);
+    context.log(`Environment variables: MICROSERVICES_VM_IP=${process.env.MICROSERVICES_VM_IP}`);
+    
     // Construir la URL del servicio
     const servicePort = SERVICE_PORTS[service];
-    const serviceUrl = `http://${VM_IP}:${servicePort}/${path}`;
+    const serviceUrl = path ? `http://${VM_IP}:${servicePort}/${path}` : `http://${VM_IP}:${servicePort}`;
     
     // Construir opciones para la petición
     const requestOptions = {
