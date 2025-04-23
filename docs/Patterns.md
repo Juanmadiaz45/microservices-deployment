@@ -1,7 +1,5 @@
 # Patterns
 
----
-
 ## 1. Circuit Breaker Pattern
 
 ### Purpose
