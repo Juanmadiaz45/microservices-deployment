@@ -52,7 +52,9 @@ This dual-strategy approach enables rapid development while maintaining operatio
 ## Architecture
 
 Take a look at the components diagram that describes them and their interactions.
-![microservice-app-example](/arch-img/Microservices.png)
+
+![image](https://github.com/user-attachments/assets/0e2a3798-e411-468d-a1d1-ee7b7528b7d5)
+
 
 ---
 
