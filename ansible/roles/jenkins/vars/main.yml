@@ -1,0 +1,1 @@
+jenkins_url: "http://{{ ansible_host }}:{{ jenkins_port }}/"

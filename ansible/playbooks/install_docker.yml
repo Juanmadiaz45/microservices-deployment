@@ -1,6 +1,6 @@
 ---
 - name: Install Docker and Docker Compose
-  hosts: microservices_servers
+  hosts: all
   become: true
   roles:
     - docker

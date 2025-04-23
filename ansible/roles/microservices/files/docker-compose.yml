@@ -14,7 +14,7 @@ services:
       - "9411:9411"
 
   auth-api:
-    image: mag1305/auth-api:latest
+    image: juanmadiaz45/auth-api:latest
     container_name: auth-api
     environment:
       - AUTH_API_PORT=8000
@@ -34,7 +34,7 @@ services:
       start_period: 40s
 
   users-api:
-    image: mag1305/users-api:latest
+    image: juanmadiaz45/users-api:latest
     container_name: users-api
     environment:
       - JWT_SECRET=PRFT
@@ -52,7 +52,7 @@ services:
       start_period: 40s
 
   todos-api:
-    image: mag1305/todos-api:latest
+    image: juanmadiaz45/todos-api:latest
     container_name: todos-api
     environment:
       - TODO_API_PORT=8082
@@ -74,7 +74,7 @@ services:
       start_period: 40s
 
   log-message-processor:
-    image: mag1305/log-processor:latest
+    image: juanmadiaz45/log-message-processor:latest
     container_name: log-message-processor
     environment:
       - REDIS_HOST=redis
@@ -86,7 +86,7 @@ services:
       - zipkin
 
   frontend:
-    image: juanmadiaz45/microservice-app-example-frontend:latest
+    image: juanmadiaz45/frontend:latest
     container_name: frontend
     environment:
       - PORT=8080
@@ -97,3 +97,8 @@ services:
     depends_on:
       - auth-api
       - todos-api
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
