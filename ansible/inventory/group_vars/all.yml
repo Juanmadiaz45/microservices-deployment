@@ -1,0 +1,8 @@
+ansible_user: adminuser
+ansible_ssh_pass: "SecretPassword1234!"
+ansible_become_password: "SecretPassword1234!"
+
+azure_vm_password: "Password@123"
+docker_hub_username: "juanmadiaz45"
+docker_hub_token: "{{ lookup('file', '../inventory/secrets.yml') | from_yaml | attr('docker_token') }}"
+sonar_host_url: "http://51.137.206.160:9000"
