@@ -9,14 +9,14 @@ echo "🚀 Ejecutando playbooks iniciales de Ansible..."
 
 # Instalar Docker en todas las máquinas virtuales
 echo "🔧 Instalando Docker en todas las VMs..."
-#ansible-playbook -i inventory/hosts.ini playbooks/install_docker.yml
+ansible-playbook -i inventory/hosts.ini playbooks/install_docker.yml
 
 # Esperar un momento para asegurar que Docker esté listo
 sleep 10
 
 # Implementar microservicios
 echo "🚢 Desplegando microservicios..."
-# ansible-playbook -i inventory/hosts.ini playbooks/run_container.yml
+ansible-playbook -i inventory/hosts.ini playbooks/run_container.yml
 
 # Obtener la IP de CI/Jenkins desde el archivo secrets.yml
 ci_vm_ip=$(grep "ci_vm_ip" inventory/secrets.yml | awk -F': ' '{print $2}' | awk '{print $1}' | tr -d '"')
@@ -28,11 +28,9 @@ fi
 
 echo "🔍 Usando IP de CI/Jenkins: $ci_vm_ip"
 
-
-
 # Implementar SonarQube
 echo "📊 Desplegando SonarQube..."
-#ansible-playbook -i inventory/hosts.ini playbooks/deploy_sonarqube.yml
+ansible-playbook -i inventory/hosts.ini playbooks/deploy_sonarqube.yml
 
 # Esperar a que SonarQube esté listo
 echo "⏳ Esperando que SonarQube esté listo en http://$ci_vm_ip:9000..."
@@ -107,8 +105,8 @@ else
     -d "url=http://$ci_vm_ip:80/sonarqube-webhook/"
 fi
 
-# Implementar Jenkins
-echo "🛠️ Desplegando Jenkins..."
+# Pasar variables de entorno para el despliegue de Jenkins
+echo "🛠️ Desplegando Jenkins con integración de repositorios..."
 ansible-playbook -i inventory/hosts.ini playbooks/deploy_jenkins.yml
 
 echo "🎉 Implementación completada con éxito."

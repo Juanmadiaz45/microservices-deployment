@@ -1,1 +1,31 @@
+---
+# Variables para la configuración de Jenkins
 jenkins_url: "http://{{ ansible_host }}:{{ jenkins_port }}/"
+jenkins_port: "80"
+
+# Configuración del pipeline
+pipeline_name: "microservices-pipeline"
+repo_owner: "{{ repo_owner }}"
+repo_name: "{{ repo_name }}"
+project_name: "Microservices Application Pipeline"
+
+# Configuración del pipeline de infraestructura
+infra_pipeline_name: "infrastructure-pipeline"
+infra_repo_owner: "{{ infra_repo_owner }}"
+infra_repo_name: "{{ infra_repo_name }}"
+infra_project_name: "Infrastructure Deployment Pipeline"
+
+# Configuración de SonarQube
+sonar_host_url: "http://{{ ansible_host }}:9000"
+sonar_credentials_id: "SONAR_TOKEN"
+sonar_token: "{{ sonar_token }}"
+
+# Credenciales de Docker Hub
+docker_hub_username: "{{ docker_hub_username }}"
+docker_hub_token: "{{ docker_hub_token }}"
+
+# Credenciales de Azure
+azure_client_id: "{{ azure_client_id }}"
+azure_client_secret: "{{ azure_client_secret }}"
+azure_tenant_id: "{{ azure_tenant_id }}"
+azure_subscription_id: "{{ azure_subscription_id }}"

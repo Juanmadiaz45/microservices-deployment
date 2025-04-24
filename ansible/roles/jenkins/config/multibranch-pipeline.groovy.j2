@@ -11,81 +11,97 @@ import com.cloudbees.hudson.plugins.folder.computed.PeriodicFolderTrigger
 import com.cloudbees.plugins.credentials.CredentialsProvider
 import com.cloudbees.plugins.credentials.common.StandardCredentials
 
-// Parámetros de configuración
-def pipelineName = "{{ pipeline_name }}"
-def repoOwner = "{{ repo_owner }}"
-def repoName = "{{ repo_name }}"
-def projectName = "{{ project_name }}"
-def credentialsId = "{{ credentials_id }}"
-def scanInterval = 1
-def numToKeep = 5
+// Función para crear un multibranch pipeline
+def createMultibranchPipeline(String pipelineName, String repoOwner, String repoName, String projectName, String credentialsId, int scanInterval, int numToKeep) {
+    // Obtener la instancia de Jenkins
+    def jenkins = Jenkins.getInstance()
 
-// Obtener la instancia de Jenkins
-def jenkins = Jenkins.getInstance()
-
-// Verificar si las credenciales existen
-def credentialsList = CredentialsProvider.lookupCredentials(
-    StandardCredentials.class,
-    jenkins,
-    null,
-    null
-)
-def credentialsExist = credentialsList.find { it.id == credentialsId }
-if (!credentialsExist) {
-    println "ERROR: No se encontraron las credenciales con ID '${credentialsId}'. Verifica que existan en Jenkins."
-    return
-}
-println "Credenciales '${credentialsId}' encontradas correctamente."
-
-// Verificar si el pipeline ya existe
-def existingJob = jenkins.getItemByFullName(pipelineName)
-if (existingJob != null) {
-    println "El pipeline '${pipelineName}' ya existe. Se omitirá la creación."
-    return
-}
-
-// Crear el multibranch pipeline
-def multibranchProject = jenkins.createProject(WorkflowMultiBranchProject.class, pipelineName)
-multibranchProject.setDisplayName(projectName)
-// Configurar el origen del repositorio GitHub
-def githubSource = new GitHubSCMSource(repoOwner, repoName)
-githubSource.setId("github-source-${repoOwner}-${repoName}")
-githubSource.setCredentialsId(credentialsId)
-println "Credenciales '${credentialsId}' asignadas al origen GitHub."
-
-// Configurar los comportamientos de detección de ramas
-List<SCMSourceTrait> traits = new ArrayList<>()
-traits.add(new BranchDiscoveryTrait(true, true))  // Detectar ramas
-traits.add(new OriginPullRequestDiscoveryTrait(1))  // Detectar PRs (merge)
-traits.add(new ForkPullRequestDiscoveryTrait(1, new ForkPullRequestDiscoveryTrait.TrustPermission()))
-githubSource.setTraits(traits)
-
-// Añadir el origen del repositorio al proyecto
-// Crear el BranchSource y asignarlo al proyecto
-def branchSource = new BranchSource(githubSource)
-multibranchProject.getSourcesList().add(branchSource)
-
-// Este paso asegura que Jenkins guarda bien todos los datos (incluyendo credenciales)
-multibranchProject.getSourcesList().each { source ->
-    if (source.source instanceof GitHubSCMSource) {
-        def scmSource = (GitHubSCMSource) source.source
-        println "Verificando que las credenciales estén asignadas: ${scmSource.getCredentialsId()}"
+    // Verificar si las credenciales existen
+    def credentialsList = CredentialsProvider.lookupCredentials(
+        StandardCredentials.class,
+        jenkins,
+        null,
+        null
+    )
+    def credentialsExist = credentialsList.find { it.id == credentialsId }
+    if (!credentialsExist) {
+        println "ERROR: No se encontraron las credenciales con ID '${credentialsId}'. Verifica que existan en Jenkins."
+        return
     }
+    println "Credenciales '${credentialsId}' encontradas correctamente para pipeline ${pipelineName}."
+
+    // Verificar si el pipeline ya existe
+    def existingJob = jenkins.getItemByFullName(pipelineName)
+    if (existingJob != null) {
+        println "El pipeline '${pipelineName}' ya existe. Se omitirá la creación."
+        return
+    }
+
+    // Crear el multibranch pipeline
+    def multibranchProject = jenkins.createProject(WorkflowMultiBranchProject.class, pipelineName)
+    multibranchProject.setDisplayName(projectName)
+    
+    // Configurar el origen del repositorio GitHub
+    def githubSource = new GitHubSCMSource(repoOwner, repoName)
+    githubSource.setId("github-source-${repoOwner}-${repoName}")
+    githubSource.setCredentialsId(credentialsId)
+    println "Credenciales '${credentialsId}' asignadas al origen GitHub para pipeline ${pipelineName}."
+
+    // Configurar los comportamientos de detección de ramas
+    List<SCMSourceTrait> traits = new ArrayList<>()
+    traits.add(new BranchDiscoveryTrait(true, true))  // Detectar ramas
+    traits.add(new OriginPullRequestDiscoveryTrait(1))  // Detectar PRs (merge)
+    traits.add(new ForkPullRequestDiscoveryTrait(1, new ForkPullRequestDiscoveryTrait.TrustPermission()))
+    githubSource.setTraits(traits)
+
+    // Añadir el origen del repositorio al proyecto
+    // Crear el BranchSource y asignarlo al proyecto
+    def branchSource = new BranchSource(githubSource)
+    multibranchProject.getSourcesList().add(branchSource)
+
+    // Este paso asegura que Jenkins guarda bien todos los datos (incluyendo credenciales)
+    multibranchProject.getSourcesList().each { source ->
+        if (source.source instanceof GitHubSCMSource) {
+            def scmSource = (GitHubSCMSource) source.source
+            println "Verificando que las credenciales estén asignadas: ${scmSource.getCredentialsId()}"
+        }
+    }
+
+    // Configurar la estrategia para elementos huérfanos (eliminados)
+    multibranchProject.setOrphanedItemStrategy(new DefaultOrphanedItemStrategy(true, numToKeep, numToKeep))
+
+    // Configurar el disparador periódico para escaneo
+    multibranchProject.addTrigger(new PeriodicFolderTrigger("${scanInterval}d"))
+
+    // Guardar la configuración
+    multibranchProject.save()
+
+    println "Multibranch pipeline '${pipelineName}' creado exitosamente."
+    println "URL: ${jenkins.rootUrl}job/${pipelineName}/"
+
+    // Forzar un escaneo inicial para detectar ramas
+    multibranchProject.scheduleBuild()
+    println "Se ha programado un escaneo inicial de ramas para ${pipelineName}."
 }
 
+// Crear pipeline para código de aplicación
+createMultibranchPipeline(
+    "{{ pipeline_name }}", 
+    "{{ repo_owner }}", 
+    "{{ repo_name }}", 
+    "{{ project_name }}", 
+    "{{ credentials_id }}", 
+    1, 
+    5
+)
 
-// Configurar la estrategia para elementos huérfanos (eliminados)
-multibranchProject.setOrphanedItemStrategy(new DefaultOrphanedItemStrategy(true, numToKeep, numToKeep))
-
-// Configurar el disparador periódico para escaneo
-multibranchProject.addTrigger(new PeriodicFolderTrigger("${scanInterval}d"))
-
-// Guardar la configuración
-multibranchProject.save()
-
-println "Multibranch pipeline '${pipelineName}' creado exitosamente."
-println "URL: ${jenkins.rootUrl}job/${pipelineName}/"
-
-// Forzar un escaneo inicial para detectar ramas
-multibranchProject.scheduleBuild()
-println "Se ha programado un escaneo inicial de ramas."
+// Crear pipeline para infraestructura
+createMultibranchPipeline(
+    "{{ infra_pipeline_name }}", 
+    "{{ infra_repo_owner }}", 
+    "{{ infra_repo_name }}", 
+    "{{ infra_project_name }}", 
+    "{{ credentials_id }}", 
+    1, 
+    5
+)

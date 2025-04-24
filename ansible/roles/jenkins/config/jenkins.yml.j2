@@ -55,6 +55,32 @@ credentials:
               id: "SONAR_HOST_URL"
               secret: "{{ sonar_host_url }}"
               description: "Sonar"
+          - string:
+              scope: GLOBAL
+              id: "AZURE_SUBSCRIPTION_ID"  
+              secret: "{{ azure_subscription_id }}"
+              description: "Azure Subscription ID"
+          - string:
+              scope: GLOBAL
+              id: "AZURE_CLIENT_ID"
+              secret: "{{ azure_client_id }}"
+              description: "Azure Service Principal Client ID"
+          - string:
+              scope: GLOBAL
+              id: "AZURE_CLIENT_SECRET"
+              secret: "{{ azure_client_secret }}"
+              description: "Azure Service Principal Client Secret"
+          - string:
+              scope: GLOBAL
+              id: "AZURE_TENANT_ID"
+              secret: "{{ azure_tenant_id }}"
+              description: "Azure Tenant ID"
+          - usernamePassword:
+              scope: GLOBAL
+              id: "SSH_CREDENTIALS"
+              username: "{{ ansible_user }}"
+              password: "${AZURE_VM_PASSWORD}"
+              description: "SSH Credentials for VMs"
 
 tool:
   sonarRunnerInstallation:
@@ -81,4 +107,3 @@ unclassified:
       - credentialsId: "{{ sonar_credentials_id }}"
         name: "SonarQube"
         serverUrl: "http://{{ ansible_host }}:9000"
-      
