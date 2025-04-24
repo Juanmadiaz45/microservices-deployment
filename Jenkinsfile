@@ -1,92 +1,85 @@
 pipeline {
-    agent none
+    agent any
+    
+    environment {
+        TERRAFORM_DIR = "${WORKSPACE}/terraform"
+    }
     
     stages {
-        stage('Terraform Stage') {
-            agent {
-                docker {
-                    image 'hashicorp/terraform:1.11.4'
-                    args '-v /tmp:/tmp'
-                }
+        stage('Checkout') {
+            steps {
+                checkout scm
             }
-            
-            environment {
-                AZURE_SUBSCRIPTION_ID = credentials('AZURE_SUBSCRIPTION_ID')
-                AZURE_CLIENT_ID = credentials('AZURE_CLIENT_ID')
-                AZURE_CLIENT_SECRET = credentials('AZURE_CLIENT_SECRET')
-                AZURE_TENANT_ID = credentials('AZURE_TENANT_ID')
-                SSH_CREDENTIALS = credentials('SSH_CREDENTIALS')
-            }
-            
-            stages {
-                stage('Checkout') {
-                    steps {
-                        checkout scm
-                    }
-                }
-                
-                stage('Terraform Version') {
-                    steps {
-                        sh 'terraform --version'
-                    }
-                }
-                
-                stage('Terraform Init') {
-                    steps {
-                        dir('terraform') {
-                            sh 'terraform init'
-                        }
-                    }
-                }
-                
-                stage('Terraform Validate') {
-                    steps {
-                        dir('terraform') {
-                            sh 'terraform validate'
-                        }
-                    }
-                }
-                
-                stage('Terraform Plan') {
-                    steps {
-                        dir('terraform') {
-                            sh 'terraform plan -out=tfplan'
-                        }
-                    }
-                }
-                
-                stage('Approval') {
-                    steps {
-                        input message: 'Do you want to apply these infrastructure changes?', ok: 'Apply'
-                    }
-                }
-                
-                stage('Terraform Apply') {
-                    steps {
-                        dir('terraform') {
-                            sh 'terraform apply -auto-approve tfplan'
-                        }
+        }
+        
+        stage('Detect Terraform Changes') {
+            steps {
+                script {
+                    def changes = sh(
+                        script: "git diff --name-only HEAD^ HEAD | grep -E '^terraform/.*\\.tf$' || echo ''",
+                        returnStdout: true
+                    ).trim()
+                    
+                    env.TERRAFORM_CHANGES = changes.isEmpty() ? 'false' : 'true'
+                    
+                    if (env.TERRAFORM_CHANGES == 'true') {
+                        echo "Detectados cambios en archivos Terraform: ${changes}"
+                    } else {
+                        echo "No se detectaron cambios en archivos Terraform"
                     }
                 }
             }
         }
         
-        stage('Ansible Stage') {
-            agent {
-                docker {
-                    image 'cytopia/ansible:latest'
-                    args '-v /tmp:/tmp'
+        stage('Terraform Init') {
+            when {
+                expression { return env.TERRAFORM_CHANGES == 'true' }
+            }
+            steps {
+                dir(env.TERRAFORM_DIR) {
+                    sh 'terraform init'
                 }
             }
-            
+        }
+        
+        stage('Terraform Plan') {
+            when {
+                expression { return env.TERRAFORM_CHANGES == 'true' }
+            }
             steps {
-                checkout scm
-                
-                dir('ansible') {
-                    sh '''
-                        chmod +x ./deploy.sh
-                        ./deploy.sh
-                    '''
+                dir(env.TERRAFORM_DIR) {
+                    sh 'terraform plan -out=tfplan'
+                }
+            }
+        }
+        
+        stage('Approval') {
+            when {
+                expression { return env.TERRAFORM_CHANGES == 'true' }
+            }
+            steps {
+                input message: '¿Continuar con la aplicación de Terraform?', ok: 'Aplicar'
+            }
+        }
+        
+        stage('Terraform Apply') {
+            when {
+                expression { return env.TERRAFORM_CHANGES == 'true' }
+            }
+            steps {
+                dir(env.TERRAFORM_DIR) {
+                    sh 'terraform apply -auto-approve tfplan'
+                }
+            }
+        }
+        
+        stage('Run Ansible') {
+            when {
+                expression { return env.TERRAFORM_CHANGES == 'true' }
+            }
+            steps {
+                dir("${WORKSPACE}/ansible") {
+                    sh 'ansible-playbook -i inventory playbook.yml'
                 }
             }
         }
@@ -94,10 +87,10 @@ pipeline {
     
     post {
         success {
-            echo 'Infrastructure deployment completed successfully!'
+            echo 'Pipeline ejecutado correctamente'
         }
         failure {
-            echo 'Infrastructure deployment failed!'
+            echo 'Pipeline falló'
         }
     }
 }
