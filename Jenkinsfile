@@ -17,25 +17,45 @@ pipeline {
             }
         }
         
+        stage('Install Dependencies') {
+            steps {
+                sh '''
+                    apt-get update || true
+                    apt-get install -y wget unzip curl || true
+                '''
+            }
+        }
+        
         stage('Install Terraform') {
             steps {
                 sh '''
-                    if ! command -v wget &> /dev/null; then
-                        echo "Installing wget..."
-                        sudo apt-get update && sudo apt-get install -y wget unzip
-                    fi
-
                     if ! command -v terraform &> /dev/null; then
                         echo "Terraform not found, installing..."
-                        wget -q https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip
+                        # Try curl if wget is not available
+                        if command -v wget &> /dev/null; then
+                            wget -q https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip
+                        elif command -v curl &> /dev/null; then
+                            curl -s -o terraform_${TERRAFORM_VERSION}_linux_amd64.zip https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip
+                        else
+                            echo "Neither wget nor curl is available. Cannot download Terraform."
+                            exit 1
+                        fi
+                        
                         unzip -q terraform_${TERRAFORM_VERSION}_linux_amd64.zip
-                        sudo mv terraform /usr/local/bin/
-                        sudo chmod +x /usr/local/bin/terraform
-                        rm terraform_${TERRAFORM_VERSION}_linux_amd64.zip
+                        
+                        # Try to move to a directory in PATH without sudo
+                        mkdir -p $HOME/bin
+                        mv terraform $HOME/bin/
+                        chmod +x $HOME/bin/terraform
+                        export PATH=$HOME/bin:$PATH
+                        rm -f terraform_${TERRAFORM_VERSION}_linux_amd64.zip
                     else
                         echo "Terraform is already installed"
                     fi
-                    terraform --version
+                    
+                    # Verify terraform is in PATH
+                    echo "PATH=$PATH"
+                    terraform --version || $HOME/bin/terraform --version
                 '''
             }
         }
@@ -44,7 +64,8 @@ pipeline {
             steps {
                 dir('terraform') {
                     sh '''
-                        terraform init
+                        export PATH=$HOME/bin:$PATH
+                        terraform init || $HOME/bin/terraform init
                     '''
                 }
             }
@@ -54,7 +75,8 @@ pipeline {
             steps {
                 dir('terraform') {
                     sh '''
-                        terraform validate
+                        export PATH=$HOME/bin:$PATH
+                        terraform validate || $HOME/bin/terraform validate
                     '''
                 }
             }
@@ -64,7 +86,8 @@ pipeline {
             steps {
                 dir('terraform') {
                     sh '''
-                        terraform plan -out=tfplan
+                        export PATH=$HOME/bin:$PATH
+                        terraform plan -out=tfplan || $HOME/bin/terraform plan -out=tfplan
                     '''
                 }
             }
@@ -80,7 +103,8 @@ pipeline {
             steps {
                 dir('terraform') {
                     sh '''
-                        terraform apply -auto-approve tfplan
+                        export PATH=$HOME/bin:$PATH
+                        terraform apply -auto-approve tfplan || $HOME/bin/terraform apply -auto-approve tfplan
                     '''
                 }
             }
@@ -90,6 +114,7 @@ pipeline {
             steps {
                 dir('ansible') {
                     sh '''
+                        chmod +x ./deploy.sh
                         ./deploy.sh
                     '''
                 }
