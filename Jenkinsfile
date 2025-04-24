@@ -91,8 +91,12 @@ pipeline {
             echo 'Infrastructure deployment failed!'
         }
         always {
-            echo 'Cleaning up workspace...'
-            cleanWs()
+            // Only clean workspace on master node, not in Docker containers
+            if (env.NODE_NAME == 'master' || env.NODE_NAME == null) {
+                cleanWs()
+            } else {
+                echo "Skipping workspace cleanup on Docker agent"
+            }
         }
     }
 }
