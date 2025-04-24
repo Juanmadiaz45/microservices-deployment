@@ -20,6 +20,11 @@ pipeline {
         stage('Install Terraform') {
             steps {
                 sh '''
+                    if ! command -v wget &> /dev/null; then
+                        echo "Installing wget..."
+                        apt-get update && apt-get install -y wget unzip
+                    fi
+                    
                     if ! command -v terraform &> /dev/null; then
                         echo "Terraform not found, installing..."
                         wget -q https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip
