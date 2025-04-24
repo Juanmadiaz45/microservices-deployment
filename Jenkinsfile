@@ -22,7 +22,7 @@ pipeline {
                 sh '''
                     if ! command -v wget &> /dev/null; then
                         echo "Installing wget..."
-                        apt-get update && apt-get install -y wget unzip
+                        sudo apt-get update && sudo apt-get install -y wget unzip
                     fi
 
                     if ! command -v terraform &> /dev/null; then
@@ -30,6 +30,7 @@ pipeline {
                         wget -q https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip
                         unzip -q terraform_${TERRAFORM_VERSION}_linux_amd64.zip
                         sudo mv terraform /usr/local/bin/
+                        sudo chmod +x /usr/local/bin/terraform
                         rm terraform_${TERRAFORM_VERSION}_linux_amd64.zip
                     else
                         echo "Terraform is already installed"
