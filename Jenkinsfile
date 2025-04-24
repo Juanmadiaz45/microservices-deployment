@@ -2,7 +2,7 @@ pipeline {
     agent any
     
     environment {
-        TERRAFORM_VERSION = '1.6.6'
+        TERRAFORM_VERSION = '1.11.4'
         AZURE_SUBSCRIPTION_ID = credentials('AZURE_SUBSCRIPTION_ID')
         AZURE_CLIENT_ID = credentials('AZURE_CLIENT_ID')
         AZURE_CLIENT_SECRET = credentials('AZURE_CLIENT_SECRET')
@@ -24,7 +24,7 @@ pipeline {
                         echo "Installing wget..."
                         apt-get update && apt-get install -y wget unzip
                     fi
-                    
+
                     if ! command -v terraform &> /dev/null; then
                         echo "Terraform not found, installing..."
                         wget -q https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip
