@@ -1,0 +1,76 @@
+---
+- name: Crear la carpeta para monitoring
+  file:
+    path: /home/{{ ansible_user }}/monitoring
+    state: directory
+    mode: "0755"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+
+- name: Crear la carpeta de dashboards
+  file:
+    path: /home/{{ ansible_user }}/monitoring/dashboards
+    state: directory
+    mode: "0755"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+
+- name: Copiar archivo docker-compose.yml para monitoring
+  copy:
+    src: docker-compose.yml
+    dest: /home/{{ ansible_user }}/monitoring/docker-compose.yml
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0644"
+
+- name: Copiar archivo prometheus.yml
+  copy:
+    src: prometheus.yml
+    dest: /home/{{ ansible_user }}/monitoring/prometheus.yml
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0644"
+
+- name: Copiar archivo datasources.yml para Grafana
+  copy:
+    src: datasources.yml
+    dest: /home/{{ ansible_user }}/monitoring/datasources.yml
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0644"
+
+- name: Copiar archivo de configuración de dashboards
+  copy:
+    src: dashboards/dashboard.yml
+    dest: /home/{{ ansible_user }}/monitoring/dashboards/dashboard.yml
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0644"
+
+- name: Copiar archivo de dashboard de microservicios
+  copy:
+    src: dashboards/microservices-dashboard.json
+    dest: /home/{{ ansible_user }}/monitoring/dashboards/microservices-dashboard.json
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0644"
+
+- name: Iniciar los servicios de monitoreo
+  command: docker-compose up -d
+  args:
+    chdir: /home/{{ ansible_user }}/monitoring/
+  become: true
+  become_user: "{{ ansible_user }}"
+  become_method: su
+
+- name: Mostrar información de acceso a Grafana
+  debug:
+    msg: 
+      - "Grafana está disponible en: http://{{ ansible_host }}:3000"
+      - "Usuario predeterminado: admin"
+      - "Contraseña predeterminada: admin"
+      - "Dashboard de microservicios ya está configurado automáticamente"
+
+- name: Mostrar información de acceso a Prometheus
+  debug:
+    msg: "Prometheus está disponible en: http://{{ ansible_host }}:9090"

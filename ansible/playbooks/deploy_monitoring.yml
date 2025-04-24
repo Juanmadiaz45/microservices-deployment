@@ -1,0 +1,25 @@
+---
+- name: Desplegar solución de monitoreo con Prometheus y Grafana
+  hosts: monitoring
+  become: yes
+  roles:
+    - monitoring
+
+- name: Verificar el estado de los servicios de monitoreo
+  hosts: monitoring
+  tasks:
+    - name: Verificar si el contenedor de Prometheus está funcionando
+      shell: "docker ps -f name=prometheus --format {% raw %}{{.Status}}{% endraw %}"
+      register: prometheus_status
+      changed_when: false
+
+    - name: Verificar si el contenedor de Grafana está funcionando
+      shell: "docker ps -f name=grafana --format {% raw %}{{.Status}}{% endraw %}"
+      register: grafana_status
+      changed_when: false
+
+    - name: Mostrar estado de servicios de monitoreo
+      debug:
+        msg:
+          - "Estado de Prometheus: {{ prometheus_status.stdout }}"
+          - "Estado de Grafana: {{ grafana_status.stdout }}"

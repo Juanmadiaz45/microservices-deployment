@@ -36,9 +36,25 @@ credentials:
               description: "GitHub token for API access"
           - string:
               scope: GLOBAL
-              id: "{{ sonar_credentials_id }}"
+              id: "SONAR_TOKEN"
               secret: "{{ sonar_token }}"
               description: "Sonar token for API access"
+          - string:
+              scope: GLOBAL
+              id: "AZURE_VM_PASSWORD"
+              secret: "{{ azure_vm_password }}"
+              description: "Azure VM password"
+          - usernamePassword:
+              scope: GLOBAL
+              id: "DOCKER_HUB_CREDENTIALS"
+              username: "{{ docker_hub_username }}"
+              password: "{{ docker_hub_token }}"
+              description: "Docker Hub credentials"
+          - string:
+              scope: GLOBAL
+              id: "SONAR_HOST_URL"
+              secret: "{{ sonar_host_url }}"
+              description: "Sonar"
 
 tool:
   sonarRunnerInstallation:
@@ -55,7 +71,7 @@ unclassified:
     configs:
       - name: "GitHub"
         apiUrl: "https://api.github.com"
-        credentialsId: "github-token"
+        credentialsId: "{{ credentials_id }}"
         manageHooks: true
   location:
     url: "{{ jenkins_url }}"
