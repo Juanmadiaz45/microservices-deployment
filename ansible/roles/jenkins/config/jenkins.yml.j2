@@ -1,0 +1,84 @@
+jenkins:
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: admin
+          password: admin
+
+  authorizationStrategy:
+    globalMatrix:
+      entries:
+        - group:
+            name: "anonymous"
+            permissions:
+              - "Overall/Read"
+
+        - group:
+            name: "authenticated"
+            permissions:
+              - "Overall/Administer"
+
+        - user:
+            name: "admin"
+            permissions:
+              - "Overall/Administer"
+
+credentials:
+  system:
+    domainCredentials:
+      - credentials:
+          - usernamePassword:
+              scope: GLOBAL
+              id: "{{ credentials_id }}"
+              username: "{{ repo_owner }}"
+              password: "${GITHUB_TOKEN}"
+              description: "GitHub token for API access"
+          - string:
+              scope: GLOBAL
+              id: "SONAR_TOKEN"
+              secret: "{{ sonar_token }}"
+              description: "Sonar token for API access"
+          - string:
+              scope: GLOBAL
+              id: "AZURE_VM_PASSWORD"
+              secret: "{{ azure_vm_password }}"
+              description: "Azure VM password"
+          - usernamePassword:
+              scope: GLOBAL
+              id: "DOCKER_HUB_CREDENTIALS"
+              username: "{{ docker_hub_username }}"
+              password: "{{ docker_hub_token }}"
+              description: "Docker Hub credentials"
+          - string:
+              scope: GLOBAL
+              id: "SONAR_HOST_URL"
+              secret: "{{ sonar_host_url }}"
+              description: "Sonar"
+
+tool:
+  sonarRunnerInstallation:
+    installations:
+      - name: "SonarQube Scanner"
+        properties:
+          - installSource:
+              installers:
+                - sonarRunnerInstaller:
+                    id: "7.1.0.4889"
+
+unclassified:
+  githubpluginconfig:
+    configs:
+      - name: "GitHub"
+        apiUrl: "https://api.github.com"
+        credentialsId: "{{ credentials_id }}"
+        manageHooks: true
+  location:
+    url: "{{ jenkins_url }}"
+    adminAddress: "13miguegonza2005@gmail.com"
+  sonarGlobalConfiguration:
+    installations:
+      - credentialsId: "{{ sonar_credentials_id }}"
+        name: "SonarQube"
+        serverUrl: "http://{{ ansible_host }}:9000"
+      

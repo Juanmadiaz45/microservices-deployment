@@ -1,0 +1,44 @@
+---
+- name: Create app directory
+  file:
+    path: /opt/microservices
+    state: directory
+    mode: "0755"
+
+- name: Copy docker-compose file
+  copy:
+    src: docker-compose.yml
+    dest: /opt/microservices/docker-compose.yml
+    mode: "0644"
+
+- name: Pull Docker images
+  shell: docker-compose pull
+  args:
+    chdir: /opt/microservices
+  register: pull_output
+
+- name: Show pull output
+  debug:
+    var: pull_output.stdout_lines
+
+- name: Deploy with docker-compose
+  shell: docker-compose up -d
+  args:
+    chdir: /opt/microservices
+  register: deploy_output
+
+- name: Show deployment output
+  debug:
+    var: deploy_output.stdout_lines
+
+- name: Restart unhealthy containers
+  shell: |
+    docker ps --filter "health=unhealthy" --format "{{ '{{' }}.ID{{ '}}' }}" | xargs --no-run-if-empty docker restart
+  args:
+    executable: /bin/bash
+  register: restart_output
+  changed_when: restart_output.stdout != ""
+
+- name: Show restart output
+  debug:
+    var: restart_output.stdout_lines

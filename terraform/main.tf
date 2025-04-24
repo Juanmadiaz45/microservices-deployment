@@ -20,12 +20,46 @@ module "networking" {
 }
 
 module "vm" {
-  source = "./modules/vm"
+  source = "./modules/microservices-vm"
 
   location            = azurerm_resource_group.microservicesrg.location
   resource_group_name = azurerm_resource_group.microservicesrg.name
   subnet_id           = module.networking.subnet_id
   vm_name             = var.vm_name
+  vm_size             = var.vm_size
+  admin_username      = var.admin_username
+  admin_password      = var.admin_password
+}
+
+module "function_app" {
+  source = "./modules/function-app"
+
+  location            = azurerm_resource_group.microservicesrg.location
+  resource_group_name = azurerm_resource_group.microservicesrg.name
+  storage_account_name = "${lower(replace(var.resource_group_name, "-", ""))}funcstor1"
+  function_app_name   = "${var.resource_group_name}-circuit-breaker1"
+  microservices_vm_ip = module.vm.public_ip
+}
+
+module "monitoring_vm" {
+  source = "./modules/vms/monitoring"
+
+  location            = azurerm_resource_group.microservicesrg.location
+  resource_group_name = azurerm_resource_group.microservicesrg.name
+  subnet_id           = module.networking.subnet_id
+  vm_name             = "monitoring-vm"
+  vm_size             = var.vm_size
+  admin_username      = var.admin_username
+  admin_password      = var.admin_password
+}
+
+module "ci_vm" {
+  source = "./modules/vms/ci"
+
+  location            = azurerm_resource_group.microservicesrg.location
+  resource_group_name = azurerm_resource_group.microservicesrg.name
+  subnet_id           = module.networking.subnet_id
+  vm_name             = "ci-vm"
   vm_size             = var.vm_size
   admin_username      = var.admin_username
   admin_password      = var.admin_password

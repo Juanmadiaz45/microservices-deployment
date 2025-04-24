@@ -1,0 +1,5 @@
+---
+grafana_url: "http://{{ ansible_host }}:3000"
+prometheus_url: "http://{{ ansible_host }}:9090"
+grafana_admin_user: "admin"
+grafana_admin_password: "{{ lookup('file', 'secrets.yml') | from_yaml | attr('admin_password') }}"

@@ -3,4 +3,4 @@
   hosts: microservices_servers
   become: true
   roles:
-    - docker_container
+    - microservices

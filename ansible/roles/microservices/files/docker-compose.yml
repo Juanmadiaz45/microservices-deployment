@@ -1,0 +1,104 @@
+version: "3.8"
+
+services:
+  redis:
+    image: redis:7.0
+    container_name: redis
+    ports:
+      - "6379:6379"
+
+  zipkin:
+    image: openzipkin/zipkin:2.23
+    container_name: zipkin
+    ports:
+      - "9411:9411"
+
+  auth-api:
+    image: juanmadiaz45/auth-api:latest
+    container_name: auth-api
+    environment:
+      - AUTH_API_PORT=8000
+      - USERS_API_ADDRESS=http://users-api:8080
+      - JWT_SECRET=PRFT
+      - ZIPKIN_URL=http://zipkin:9411/api/v2/spans
+    ports:
+      - "8000:8000"
+    depends_on:
+      - users-api
+      - zipkin
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  users-api:
+    image: juanmadiaz45/users-api:latest
+    container_name: users-api
+    environment:
+      - JWT_SECRET=PRFT
+      - SERVER_PORT=8080
+      - spring.zipkin.baseUrl=http://zipkin:9411/
+    ports:
+      - "8083:8080"
+    depends_on:
+      - zipkin
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  todos-api:
+    image: juanmadiaz45/todos-api:latest
+    container_name: todos-api
+    environment:
+      - TODO_API_PORT=8082
+      - JWT_SECRET=PRFT
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_CHANNEL=log_channel
+      - ZIPKIN_URL=http://zipkin:9411/api/v2/spans
+    ports:
+      - "8082:8082"
+    depends_on:
+      - redis
+      - zipkin
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  log-message-processor:
+    image: juanmadiaz45/log-message-processor:latest
+    container_name: log-message-processor
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_CHANNEL=log_channel
+      - ZIPKIN_URL=http://zipkin:9411/api/v2/spans
+    depends_on:
+      - redis
+      - zipkin
+
+  frontend:
+    image: juanmadiaz45/frontend:latest
+    container_name: frontend
+    environment:
+      - PORT=8080
+      - AUTH_API_ADDRESS=http://auth-api:8000
+      - TODOS_API_ADDRESS=http://todos-api:8082
+    ports:
+      - "8080:8080"
+    depends_on:
+      - auth-api
+      - todos-api
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3

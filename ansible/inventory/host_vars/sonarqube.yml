@@ -1,0 +1,4 @@
+---
+ansible_host: "4.180.249.187"
+ansible_ssh_pass: "Password@123"
+ansible_user: "adminuser"
