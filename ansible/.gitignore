@@ -1,2 +1,4 @@
 # Ignorar secretos en todos los entornos
 inventory/secrets.yml
+inventory/host_vars/
+inventory/host_vars/**
