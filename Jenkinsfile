@@ -1,8 +1,12 @@
 pipeline {
-    agent any
+    agent {
+        docker {
+            image 'hashicorp/terraform:1.11.4'
+            args '-v /tmp:/tmp'
+        }
+    }
     
     environment {
-        TERRAFORM_VERSION = '1.11.4'
         AZURE_SUBSCRIPTION_ID = credentials('AZURE_SUBSCRIPTION_ID')
         AZURE_CLIENT_ID = credentials('AZURE_CLIENT_ID')
         AZURE_CLIENT_SECRET = credentials('AZURE_CLIENT_SECRET')
@@ -17,56 +21,16 @@ pipeline {
             }
         }
         
-        stage('Install Dependencies') {
+        stage('Terraform Version') {
             steps {
-                sh '''
-                    apt-get update || true
-                    apt-get install -y wget unzip curl || true
-                '''
-            }
-        }
-        
-        stage('Install Terraform') {
-            steps {
-                sh '''
-                    if ! command -v terraform &> /dev/null; then
-                        echo "Terraform not found, installing..."
-                        # Try curl if wget is not available
-                        if command -v wget &> /dev/null; then
-                            wget -q https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip
-                        elif command -v curl &> /dev/null; then
-                            curl -s -o terraform_${TERRAFORM_VERSION}_linux_amd64.zip https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip
-                        else
-                            echo "Neither wget nor curl is available. Cannot download Terraform."
-                            exit 1
-                        fi
-                        
-                        unzip -q terraform_${TERRAFORM_VERSION}_linux_amd64.zip
-                        
-                        # Try to move to a directory in PATH without sudo
-                        mkdir -p $HOME/bin
-                        mv terraform $HOME/bin/
-                        chmod +x $HOME/bin/terraform
-                        export PATH=$HOME/bin:$PATH
-                        rm -f terraform_${TERRAFORM_VERSION}_linux_amd64.zip
-                    else
-                        echo "Terraform is already installed"
-                    fi
-                    
-                    # Verify terraform is in PATH
-                    echo "PATH=$PATH"
-                    terraform --version || $HOME/bin/terraform --version
-                '''
+                sh 'terraform --version'
             }
         }
         
         stage('Terraform Init') {
             steps {
                 dir('terraform') {
-                    sh '''
-                        export PATH=$HOME/bin:$PATH
-                        terraform init || $HOME/bin/terraform init
-                    '''
+                    sh 'terraform init'
                 }
             }
         }
@@ -74,10 +38,7 @@ pipeline {
         stage('Terraform Validate') {
             steps {
                 dir('terraform') {
-                    sh '''
-                        export PATH=$HOME/bin:$PATH
-                        terraform validate || $HOME/bin/terraform validate
-                    '''
+                    sh 'terraform validate'
                 }
             }
         }
@@ -85,10 +46,7 @@ pipeline {
         stage('Terraform Plan') {
             steps {
                 dir('terraform') {
-                    sh '''
-                        export PATH=$HOME/bin:$PATH
-                        terraform plan -out=tfplan || $HOME/bin/terraform plan -out=tfplan
-                    '''
+                    sh 'terraform plan -out=tfplan'
                 }
             }
         }
@@ -102,15 +60,18 @@ pipeline {
         stage('Terraform Apply') {
             steps {
                 dir('terraform') {
-                    sh '''
-                        export PATH=$HOME/bin:$PATH
-                        terraform apply -auto-approve tfplan || $HOME/bin/terraform apply -auto-approve tfplan
-                    '''
+                    sh 'terraform apply -auto-approve tfplan'
                 }
             }
         }
         
         stage('Deploy Configuration') {
+            agent {
+                docker {
+                    image 'cytopia/ansible:latest'
+                    args '-v /tmp:/tmp'
+                }
+            }
             steps {
                 dir('ansible') {
                     sh '''
