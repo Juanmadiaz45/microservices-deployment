@@ -176,6 +176,11 @@ pipeline {
                     echo "Importando el grupo de recursos existente al estado de Terraform..."
                     sh '''
                         ${WORKSPACE}/bin/terraform import \
+                        -var="subscription_id=${AZURE_SUBSCRIPTION_ID}" \
+                        -var="client_id=${AZURE_CLIENT_ID}" \
+                        -var="client_secret=${AZURE_CLIENT_SECRET}" \
+                        -var="tenant_id=${AZURE_TENANT_ID}" \
+                        -var="admin_password=${AZURE_ADMIN_PASSWORD}" \
                         azurerm_resource_group.microservicesrg \
                         /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/microservicesrg
                     '''
