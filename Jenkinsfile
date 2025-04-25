@@ -24,11 +24,25 @@ pipeline {
 
         stage('Install Build Tools') {
             steps {
-            sh '''
-            apt-get update && apt-get install -y build-essential
-            '''
+                sh '''
+                    # Crear un directorio local para herramientas
+                    mkdir -p ${WORKSPACE}/local
+
+                    # Descargar e instalar GCC y Make en el directorio local
+                    apt-get update
+                    apt-get download -y gcc make
+                    dpkg -x $(ls gcc*.deb) ${WORKSPACE}/local
+                    dpkg -x $(ls make*.deb) ${WORKSPACE}/local
+
+                    # Agregar las herramientas al PATH
+                    export PATH=${WORKSPACE}/local/usr/bin:$PATH
+
+                    # Verificar instalación
+                    gcc --version
+                    make --version
+                '''
+            }
         }
-}
         
         stage('Install Terraform') {
             steps {
