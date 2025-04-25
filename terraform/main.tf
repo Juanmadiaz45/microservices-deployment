@@ -60,3 +60,15 @@ module "ci_vm" {
   admin_username      = var.admin_username
   admin_password      = var.admin_password
 }
+
+module "monitoring_vm" {
+  source = "./modules/vms/monitoring"
+
+  location            = azurerm_resource_group.microservicesrg.location
+  resource_group_name = azurerm_resource_group.microservicesrg.name
+  subnet_id           = module.networking.subnet_id
+  vm_name             = "monitoring-vm"
+  vm_size             = var.vm_size
+  admin_username      = var.admin_username
+  admin_password      = var.admin_password
+}
