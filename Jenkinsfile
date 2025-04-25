@@ -102,7 +102,7 @@ pipeline {
                     ${WORKSPACE}/bin/terraform plan \
                     -var="subscription_id=${AZURE_SUBSCRIPTION_ID}" \
                     -var="admin_username=${AZURE_CLIENT_ID}" \
-                    -var="admin_password=${AZURE_ADMIN_PASSWORD}" \
+                    -var="admin_password=${AZURE_VM_PASSWORD}" \
                     -out=tfplan
                 '''
             }
