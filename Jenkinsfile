@@ -21,6 +21,14 @@ pipeline {
                 checkout scm
             }
         }
+
+        stage('Install Build Tools') {
+            steps {
+            sh '''
+            apt-get update && apt-get install -y build-essential
+            '''
+        }
+}
         
         stage('Install Terraform') {
             steps {
