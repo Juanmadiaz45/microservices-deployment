@@ -114,8 +114,9 @@ pipeline {
                 expression { return env.TERRAFORM_CHANGES == 'true' }
             }
             steps {
-            dir(env.TERRAFORM_DIR) {
-                sh '${WORKSPACE}/bin/terraform apply -auto-approve tfplan'
+                dir(env.TERRAFORM_DIR) {
+                    sh '${WORKSPACE}/bin/terraform apply -auto-approve tfplan'
+                }
             }
         }
         
