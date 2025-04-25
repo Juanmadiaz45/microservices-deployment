@@ -4,10 +4,15 @@ pipeline {
     environment {
         TERRAFORM_DIR = "${WORKSPACE}/terraform"
         TERRAFORM_VERSION = "1.7.5" // You can adjust this version as needed
+        AZURE_CLI_VERSION = "2.65.0" // Versión actual de Azure CLI
         PATH = "${WORKSPACE}/bin:${env.PATH}"
         AZURE_SUBSCRIPTION_ID = credentials('AZURE_SUBSCRIPTION_ID')
         AZURE_ADMIN_USERNAME = credentials('AZURE_ADMIN_USERNAME')
         AZURE_ADMIN_PASSWORD = credentials('AZURE_VM_PASSWORD')
+        // Agregamos la variable para autenticación con Service Principal
+        AZURE_CLIENT_ID = credentials('AZURE_CLIENT_ID')
+        AZURE_CLIENT_SECRET = credentials('AZURE_CLIENT_SECRET')
+        AZURE_TENANT_ID = credentials('AZURE_TENANT_ID')
     }
     
     stages {
@@ -61,167 +66,73 @@ pipeline {
                 }
             }
         }
-        
+
         stage('Install Azure CLI') {
             steps {
                 script {
+                    // Create a bin directory in the workspace if it doesn't exist
+                    sh 'mkdir -p ${WORKSPACE}/bin'
+                    
                     // Check if Azure CLI is already installed
                     def azCliInstalled = sh(script: '${WORKSPACE}/bin/az --version || echo "NOT_INSTALLED"', returnStdout: true)
                     
                     if (azCliInstalled.contains("NOT_INSTALLED")) {
                         echo "Installing Azure CLI"
                         
-                        // For Windows
                         if (isUnix() == false) {
-                            // Download and install Azure CLI
-                            sh 'mkdir -p tmp'
-                            sh 'curl -o tmp/azure-cli-installer.msi https://aka.ms/installazurecliwindows'
-                            sh 'msiexec /i tmp/azure-cli-installer.msi /quiet'
-                            sh 'rm -rf tmp'
+                            // Windows - Install portable Python and then Azure CLI via pip
+                            sh 'mkdir -p ${WORKSPACE}/python'
+                            sh 'curl -L https://www.python.org/ftp/python/3.10.11/python-3.10.11-embed-amd64.zip -o ${WORKSPACE}/python.zip'
+                            sh 'unzip -o ${WORKSPACE}/python.zip -d ${WORKSPACE}/python'
+                            sh 'curl -L https://bootstrap.pypa.io/get-pip.py -o ${WORKSPACE}/get-pip.py'
+                            sh '${WORKSPACE}/python/python.exe ${WORKSPACE}/get-pip.py'
+                            sh '${WORKSPACE}/python/python.exe -m pip install azure-cli==${AZURE_CLI_VERSION}'
                             
-                            // Add to PATH
-                            sh 'setx PATH "%PATH%;C:\\Program Files (x86)\\Microsoft SDKs\\Azure\\CLI2\\wbin"'
-                            
-                            // Create a symlink to access az from workspace bin
-                            sh 'mklink ${WORKSPACE}\\bin\\az.exe "C:\\Program Files (x86)\\Microsoft SDKs\\Azure\\CLI2\\wbin\\az.exe" || echo "Symlink already exists or could not be created"'
-                        } else {
-                            // For Linux - without sudo
-                            echo "Attempting to install Azure CLI on Linux without sudo"
-                            
+                            // Create a batch file wrapper for az
                             sh '''
-                                mkdir -p ${WORKSPACE}/bin
-                                mkdir -p ${WORKSPACE}/tmp/azure-cli
-                                
-                                # Download portable Python installation script
-                                echo "Downloading portable Azure CLI..."
-                                curl -L https://azurecliprod.blob.core.windows.net/install.py -o ${WORKSPACE}/tmp/azure-cli/install.py || echo "Failed to download Azure CLI installer"
-                                
-                                if [ -f ${WORKSPACE}/tmp/azure-cli/install.py ]; then
-                                    echo "Installing Azure CLI to local directory..."
-                                    # Install to local directory without sudo
-                                    python3 ${WORKSPACE}/tmp/azure-cli/install.py --install-location ${WORKSPACE}/tmp/azure-cli || echo "Failed to install Azure CLI with Python installer"
-                                    
-                                    # Link to our bin directory if installation succeeded
-                                    if [ -f ${WORKSPACE}/tmp/azure-cli/bin/az ]; then
-                                        ln -sf ${WORKSPACE}/tmp/azure-cli/bin/az ${WORKSPACE}/bin/az
-                                        chmod +x ${WORKSPACE}/bin/az
-                                    fi
-                                fi
-                                
-                                # If installation didn't work, create minimal implementation
-                                if [ ! -f ${WORKSPACE}/bin/az ]; then
-                                    echo "Installing minimal az implementation..."
-                                    cat > ${WORKSPACE}/bin/az <<'EOF'
-#!/usr/bin/env python3
-import os
-import sys
-import json
-
-if len(sys.argv) > 1 and sys.argv[1] == '--version':
-    print("Azure CLI (minimal version for terraform auth)")
-    sys.exit(0)
-    
-if len(sys.argv) > 1 and sys.argv[1] == 'login' and '--service-principal' in sys.argv:
-    # Extract credentials
-    client_id = None
-    client_secret = None
-    tenant_id = None
-    
-    for i, arg in enumerate(sys.argv):
-        if arg == '-u' and i+1 < len(sys.argv):
-            client_id = sys.argv[i+1]
-        elif arg == '-p' and i+1 < len(sys.argv):
-            client_secret = sys.argv[i+1]
-        elif arg == '--tenant' and i+1 < len(sys.argv):
-            tenant_id = sys.argv[i+1]
-    
-    # Store credentials in ~/.azure directory
-    azure_dir = os.path.expanduser('~/.azure')
-    os.makedirs(azure_dir, exist_ok=True)
-    
-    with open(os.path.join(azure_dir, 'azureProfile.json'), 'w') as f:
-        json.dump({
-            "subscriptions": []
-        }, f)
-    
-    with open(os.path.join(azure_dir, 'accessTokens.json'), 'w') as f:
-        json.dump({
-            "servicePrincipalId": client_id,
-            "servicePrincipalSecret": client_secret,
-            "tenantId": tenant_id
-        }, f)
-    
-    print("Logged in using service principal {}".format(client_id))
-    sys.exit(0)
-    
-if len(sys.argv) > 1 and sys.argv[1] == 'account' and len(sys.argv) > 2 and sys.argv[2] == 'set' and '--subscription' in sys.argv:
-    subscription_id = None
-    for i, arg in enumerate(sys.argv):
-        if arg == '--subscription' and i+1 < len(sys.argv):
-            subscription_id = sys.argv[i+1]
-            break
-    
-    if subscription_id:
-        azure_dir = os.path.expanduser('~/.azure')
-        profile_path = os.path.join(azure_dir, 'azureProfile.json')
-        
-        if os.path.exists(profile_path):
-            with open(profile_path, 'r') as f:
-                profile = json.load(f)
-        else:
-            profile = {"subscriptions": []}
-        
-        profile["subscriptions"] = [{
-            "id": subscription_id,
-            "isDefault": True,
-            "name": "Terraform Subscription"
-        }]
-        
-        with open(profile_path, 'w') as f:
-            json.dump(profile, f)
-            
-        print("Subscription {} set as default".format(subscription_id))
-    sys.exit(0)
-    
-if len(sys.argv) > 1 and sys.argv[1] == 'logout':
-    azure_dir = os.path.expanduser('~/.azure')
-    tokens_path = os.path.join(azure_dir, 'accessTokens.json')
-    
-    if os.path.exists(tokens_path):
-        os.remove(tokens_path)
-    
-    print("Logged out")
-    sys.exit(0)
-
-print("Command not implemented in minimal version: {}".format(' '.join(sys.argv[1:])))
-sys.exit(1)
-EOF
-                                    chmod +x ${WORKSPACE}/bin/az
-                                    echo "Installed minimal Azure CLI implementation in ${WORKSPACE}/bin/az"
-                                fi
+                            echo @echo off > ${WORKSPACE}/bin/az.bat
+                            echo ${WORKSPACE}/python/python.exe -m azure.cli %%* >> ${WORKSPACE}/bin/az.bat
+                            '''
+                            
+                            // Create a shell wrapper for az
+                            sh '''
+                            echo #!/bin/sh > ${WORKSPACE}/bin/az
+                            echo ${WORKSPACE}/python/python.exe -m azure.cli "$@" >> ${WORKSPACE}/bin/az
+                            chmod +x ${WORKSPACE}/bin/az
+                            '''
+                        } else {
+                            // Linux - Install portable Python and then Azure CLI via pip
+                            sh 'mkdir -p ${WORKSPACE}/python'
+                            sh 'curl -L https://www.python.org/ftp/python/3.10.11/Python-3.10.11.tgz -o ${WORKSPACE}/python.tgz'
+                            sh 'mkdir -p ${WORKSPACE}/python_src'
+                            sh 'tar -xzf ${WORKSPACE}/python.tgz -C ${WORKSPACE}/python_src'
+                            sh 'cd ${WORKSPACE}/python_src/Python-3.10.11 && ./configure --prefix=${WORKSPACE}/python --enable-optimizations && make && make install'
+                            sh '${WORKSPACE}/python/bin/pip3 install azure-cli==${AZURE_CLI_VERSION}'
+                            
+                            // Create a shell wrapper for az
+                            sh '''
+                            echo '#!/bin/sh' > ${WORKSPACE}/bin/az
+                            echo '${WORKSPACE}/python/bin/python -m azure.cli "$@"' >> ${WORKSPACE}/bin/az
+                            chmod +x ${WORKSPACE}/bin/az
                             '''
                         }
                         
                         // Verify installation
-                        sh '${WORKSPACE}/bin/az --version || echo "Warning: Using minimal az implementation"'
+                        sh '${WORKSPACE}/bin/az --version'
                     } else {
                         echo "Azure CLI is already installed: ${azCliInstalled}"
                     }
-                }
-            }
-        }
-        
-        stage('Azure Login') {
-            steps {
-                withCredentials([azureServicePrincipal('AZURE_CREDENTIALS')]) {
+                    
+                    // Configure Azure CLI to authenticate with Service Principal
                     sh '''
-                        ${WORKSPACE}/bin/az login --service-principal \
-                        -u $AZURE_CLIENT_ID \
-                        -p $AZURE_CLIENT_SECRET \
-                        --tenant $AZURE_TENANT_ID
-                        
-                        ${WORKSPACE}/bin/az account set --subscription $AZURE_SUBSCRIPTION_ID
+                    ${WORKSPACE}/bin/az login --service-principal \
+                    -u ${AZURE_CLIENT_ID} \
+                    -p ${AZURE_CLIENT_SECRET} \
+                    --tenant ${AZURE_TENANT_ID}
                     '''
+                    
+                    // Set the subscription
+                    sh '${WORKSPACE}/bin/az account set --subscription ${AZURE_SUBSCRIPTION_ID}'
                 }
             }
         }
@@ -262,14 +173,17 @@ EOF
             }
             steps {
                 dir(env.TERRAFORM_DIR) {
-                sh '''
-                    ${WORKSPACE}/bin/terraform plan \
-                    -var="subscription_id=${AZURE_SUBSCRIPTION_ID}" \
-                    -var="admin_username=${AZURE_CLIENT_ID}" \
-                    -var="admin_password=${AZURE_ADMIN_PASSWORD}" \
-                    -out=tfplan
-                '''
-            }
+                    sh '''
+                        ${WORKSPACE}/bin/terraform plan \
+                        -var="subscription_id=${AZURE_SUBSCRIPTION_ID}" \
+                        -var="client_id=${AZURE_CLIENT_ID}" \
+                        -var="client_secret=${AZURE_CLIENT_SECRET}" \
+                        -var="tenant_id=${AZURE_TENANT_ID}" \
+                        -var="admin_username=${AZURE_ADMIN_USERNAME}" \
+                        -var="admin_password=${AZURE_ADMIN_PASSWORD}" \
+                        -out=tfplan
+                    '''
+                }
             }
         }
         
@@ -313,9 +227,6 @@ EOF
         }
         failure {
             echo 'Pipeline falló'
-        }
-        always {
-            sh '${WORKSPACE}/bin/az logout || echo "Already logged out"'
         }
     }
 }

@@ -3,6 +3,21 @@ variable "subscription_id" {
   type        = string
 }
 
+variable "client_id" {
+  description = "Azure Service Principal Client ID"
+  type        = string
+}
+
+variable "client_secret" {
+  description = "Azure Service Principal Client Secret"
+  type        = string
+}
+
+variable "tenant_id" {
+  description = "Azure Tenant ID"
+  type        = string
+}
+
 variable "location" {
   description = "Azure region"
   type        = string
