@@ -62,6 +62,60 @@ pipeline {
             }
         }
         
+        stage('Install Azure CLI') {
+            steps {
+                script {
+                    // Check if Azure CLI is already installed
+                    def azCliInstalled = sh(script: '${WORKSPACE}/bin/az --version || echo "NOT_INSTALLED"', returnStdout: true)
+                    
+                    if (azCliInstalled.contains("NOT_INSTALLED")) {
+                        echo "Installing Azure CLI"
+                        
+                        // For Windows
+                        if (isUnix() == false) {
+                            // Download and install Azure CLI
+                            sh 'mkdir -p tmp'
+                            sh 'curl -o tmp/azure-cli-installer.msi https://aka.ms/installazurecliwindows'
+                            sh 'msiexec /i tmp/azure-cli-installer.msi /quiet'
+                            sh 'rm -rf tmp'
+                            
+                            // Add to PATH
+                            sh 'setx PATH "%PATH%;C:\\Program Files (x86)\\Microsoft SDKs\\Azure\\CLI2\\wbin"'
+                            
+                            // Create a symlink to access az from workspace bin
+                            sh 'mklink ${WORKSPACE}\\bin\\az.exe "C:\\Program Files (x86)\\Microsoft SDKs\\Azure\\CLI2\\wbin\\az.exe" || echo "Symlink already exists or could not be created"'
+                        } else {
+                            // For Linux
+                            sh '''
+                                curl -sL https://aka.ms/InstallAzureCLIDeb | bash
+                                ln -sf /usr/bin/az ${WORKSPACE}/bin/az
+                            '''
+                        }
+                        
+                        // Verify installation
+                        sh '${WORKSPACE}/bin/az --version'
+                    } else {
+                        echo "Azure CLI is already installed: ${azCliInstalled}"
+                    }
+                }
+            }
+        }
+        
+        stage('Azure Login') {
+            steps {
+                withCredentials([azureServicePrincipal('AZURE_CREDENTIALS')]) {
+                    sh '''
+                        ${WORKSPACE}/bin/az login --service-principal \
+                        -u $AZURE_CLIENT_ID \
+                        -p $AZURE_CLIENT_SECRET \
+                        --tenant $AZURE_TENANT_ID
+                        
+                        ${WORKSPACE}/bin/az account set --subscription $AZURE_SUBSCRIPTION_ID
+                    '''
+                }
+            }
+        }
+        
         stage('Detect Terraform Changes') {
             steps {
                 script {
@@ -149,6 +203,9 @@ pipeline {
         }
         failure {
             echo 'Pipeline falló'
+        }
+        always {
+            sh '${WORKSPACE}/bin/az logout || echo "Already logged out"'
         }
     }
 }

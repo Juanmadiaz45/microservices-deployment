@@ -1,6 +1,11 @@
 provider "azurerm" {
   features {}
   subscription_id = var.subscription_id
+  
+  # Use Azure CLI authentication
+  use_cli = true
+  # Skip provider registration to avoid permission issues
+  skip_provider_registration = true
 }
 
 resource "azurerm_resource_group" "microservicesrg" {
