@@ -7,7 +7,7 @@ pipeline {
         PATH = "${WORKSPACE}/bin:${env.PATH}"
         AZURE_SUBSCRIPTION_ID = credentials('AZURE_SUBSCRIPTION_ID')
         AZURE_ADMIN_USERNAME = credentials('AZURE_ADMIN_USERNAME')
-        AZURE_ADMIN_PASSWORD = credentials('AZURE_ADMIN_PASSWORD')
+        AZURE_ADMIN_PASSWORD = credentials('AZURE_VM_PASSWORD')
     }
     
     stages {
@@ -102,7 +102,7 @@ pipeline {
                     ${WORKSPACE}/bin/terraform plan \
                     -var="subscription_id=${AZURE_SUBSCRIPTION_ID}" \
                     -var="admin_username=${AZURE_CLIENT_ID}" \
-                    -var="admin_password=${AZURE_VM_PASSWORD}" \
+                    -var="admin_password=${AZURE_ADMIN_PASSWORD}" \
                     -out=tfplan
                 '''
             }
