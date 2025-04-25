@@ -5,6 +5,9 @@ pipeline {
         TERRAFORM_DIR = "${WORKSPACE}/terraform"
         TERRAFORM_VERSION = "1.7.5" // You can adjust this version as needed
         PATH = "${WORKSPACE}/bin:${env.PATH}"
+        AZURE_SUBSCRIPTION_ID = credentials('AZURE_SUBSCRIPTION_ID')
+        AZURE_ADMIN_USERNAME = credentials('AZURE_ADMIN_USERNAME')
+        AZURE_ADMIN_PASSWORD = credentials('AZURE_ADMIN_PASSWORD')
     }
     
     stages {
@@ -95,8 +98,14 @@ pipeline {
             }
             steps {
                 dir(env.TERRAFORM_DIR) {
-                    sh '${WORKSPACE}/bin/terraform plan -out=tfplan'
-                }
+                sh '''
+                    ${WORKSPACE}/bin/terraform plan \
+                    -var="subscription_id=${AZURE_SUBSCRIPTION_ID}" \
+                    -var="admin_username=${AZURE_CLIENT_ID}" \
+                    -var="admin_password=${AZURE_ADMIN_PASSWORD}" \
+                    -out=tfplan
+                '''
+            }
             }
         }
         
@@ -105,7 +114,8 @@ pipeline {
                 expression { return env.TERRAFORM_CHANGES == 'true' }
             }
             steps {
-                input message: '¿Continuar con la aplicación de Terraform?', ok: 'Aplicar'
+            dir(env.TERRAFORM_DIR) {
+                sh '${WORKSPACE}/bin/terraform apply -auto-approve tfplan'
             }
         }
         
