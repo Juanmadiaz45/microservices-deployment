@@ -137,65 +137,65 @@ pipeline {
             }
         }
         
-        // stage('Detect Terraform Changes') {
-        //     steps {
-        //         script {
-        //             def changes = sh(
-        //                 script: 'git diff --name-only HEAD^ HEAD | grep -E "^terraform/.*\\.tf$" || echo ""',
-        //                 returnStdout: true
-        //             ).trim()
+        stage('Detect Terraform Changes') {
+            steps {
+                script {
+                    def changes = sh(
+                        script: 'git diff --name-only HEAD^ HEAD | grep -E "^terraform/.*\\.tf$" || echo ""',
+                        returnStdout: true
+                    ).trim()
                     
-        //             env.TERRAFORM_CHANGES = changes.isEmpty() ? 'false' : 'true'
+                    env.TERRAFORM_CHANGES = changes.isEmpty() ? 'false' : 'true'
                     
-        //             if (env.TERRAFORM_CHANGES == 'true') {
-        //                 echo "Detectados cambios en archivos Terraform: ${changes}"
-        //             } else {
-        //                 echo "No se detectaron cambios en archivos Terraform"
-        //             }
-        //         }
-        //     }
-        // }
-        
-        stage('Terraform Init and Import') {
-    // when {
-    //     expression { return env.TERRAFORM_CHANGES == 'true' }
-    // }
-    steps {
-        dir(env.TERRAFORM_DIR) {
-            script {
-                // Inicializar Terraform
-                sh '${WORKSPACE}/bin/terraform init'
-
-                // Verificar si el recurso ya está en el estado
-                def resourceExists = sh(
-                    script: '${WORKSPACE}/bin/terraform state list azurerm_resource_group.microservicesrg || echo "NOT_IMPORTED"',
-                    returnStdout: true
-                ).trim()
-
-                if (resourceExists == "NOT_IMPORTED") {
-                    echo "Importando el grupo de recursos existente al estado de Terraform..."
-                    sh '''
-                        ${WORKSPACE}/bin/terraform import \
-                        -var="subscription_id=${AZURE_SUBSCRIPTION_ID}" \
-                        -var="client_id=${AZURE_CLIENT_ID}" \
-                        -var="client_secret=${AZURE_CLIENT_SECRET}" \
-                        -var="tenant_id=${AZURE_TENANT_ID}" \
-                        -var="admin_password=${AZURE_ADMIN_PASSWORD}" \
-                        azurerm_resource_group.microservicesrg \
-                        /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/microservicesrg
-                    '''
-                } else {
-                    echo "El grupo de recursos ya está gestionado por Terraform."
+                    if (env.TERRAFORM_CHANGES == 'true') {
+                        echo "Detectados cambios en archivos Terraform: ${changes}"
+                    } else {
+                        echo "No se detectaron cambios en archivos Terraform"
+                    }
                 }
             }
         }
-    }
-}
+        
+        stage('Terraform Init and Import') {
+            when {
+                expression { return env.TERRAFORM_CHANGES == 'true' }
+            }
+            steps {
+                dir(env.TERRAFORM_DIR) {
+                    script {
+                        // Inicializar Terraform
+                        sh '${WORKSPACE}/bin/terraform init'
+
+                        // Verificar si el recurso ya está en el estado
+                        def resourceExists = sh(
+                            script: '${WORKSPACE}/bin/terraform state list azurerm_resource_group.microservicesrg || echo "NOT_IMPORTED"',
+                            returnStdout: true
+                        ).trim()
+
+                        if (resourceExists == "NOT_IMPORTED") {
+                            echo "Importando el grupo de recursos existente al estado de Terraform..."
+                            sh '''
+                                ${WORKSPACE}/bin/terraform import \
+                                -var="subscription_id=${AZURE_SUBSCRIPTION_ID}" \
+                                -var="client_id=${AZURE_CLIENT_ID}" \
+                                -var="client_secret=${AZURE_CLIENT_SECRET}" \
+                                -var="tenant_id=${AZURE_TENANT_ID}" \
+                                -var="admin_password=${AZURE_ADMIN_PASSWORD}" \
+                                azurerm_resource_group.microservicesrg \
+                                /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/microservicesrg
+                            '''
+                        } else {
+                            echo "El grupo de recursos ya está gestionado por Terraform."
+                        }
+                    }
+                }
+            }
+        }
         
         stage('Terraform Plan') {
-            // when {
-            //     expression { return env.TERRAFORM_CHANGES == 'true' }
-            // }
+            when {
+                expression { return env.TERRAFORM_CHANGES == 'true' }
+            }
             steps {
                 dir(env.TERRAFORM_DIR) {
                     sh '''
@@ -213,9 +213,9 @@ pipeline {
         }
         
         stage('Approval') {
-            // when {
-            //     expression { return env.TERRAFORM_CHANGES == 'true' }
-            // }
+            when {
+                expression { return env.TERRAFORM_CHANGES == 'true' }
+            }
             steps {
                 dir(env.TERRAFORM_DIR) {
                     sh '${WORKSPACE}/bin/terraform apply -auto-approve tfplan'
@@ -224,9 +224,9 @@ pipeline {
         }
         
         stage('Terraform Apply') {
-            // when {
-            //     expression { return env.TERRAFORM_CHANGES == 'true' }
-            // }
+            when {
+                expression { return env.TERRAFORM_CHANGES == 'true' }
+            }
             steps {
                 dir(env.TERRAFORM_DIR) {
                     sh '${WORKSPACE}/bin/terraform apply -auto-approve tfplan'
@@ -235,9 +235,9 @@ pipeline {
         }
         
         stage('Run Ansible') {
-            // when {
-            //     expression { return env.TERRAFORM_CHANGES == 'true' }
-            // }
+            when {
+                expression { return env.TERRAFORM_CHANGES == 'true' }
+            }
             steps {
                 dir("${WORKSPACE}/ansible") {
                     sh 'ansible-playbook -i inventory playbook.yml'
