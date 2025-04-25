@@ -137,29 +137,29 @@ pipeline {
             }
         }
         
-        stage('Detect Terraform Changes') {
-            steps {
-                script {
-                    def changes = sh(
-                        script: 'git diff --name-only HEAD^ HEAD | grep -E "^terraform/.*\\.tf$" || echo ""',
-                        returnStdout: true
-                    ).trim()
+        // stage('Detect Terraform Changes') {
+        //     steps {
+        //         script {
+        //             def changes = sh(
+        //                 script: 'git diff --name-only HEAD^ HEAD | grep -E "^terraform/.*\\.tf$" || echo ""',
+        //                 returnStdout: true
+        //             ).trim()
                     
-                    env.TERRAFORM_CHANGES = changes.isEmpty() ? 'false' : 'true'
+        //             env.TERRAFORM_CHANGES = changes.isEmpty() ? 'false' : 'true'
                     
-                    if (env.TERRAFORM_CHANGES == 'true') {
-                        echo "Detectados cambios en archivos Terraform: ${changes}"
-                    } else {
-                        echo "No se detectaron cambios en archivos Terraform"
-                    }
-                }
-            }
-        }
+        //             if (env.TERRAFORM_CHANGES == 'true') {
+        //                 echo "Detectados cambios en archivos Terraform: ${changes}"
+        //             } else {
+        //                 echo "No se detectaron cambios en archivos Terraform"
+        //             }
+        //         }
+        //     }
+        // }
         
         stage('Terraform Init and Import') {
-    when {
-        expression { return env.TERRAFORM_CHANGES == 'true' }
-    }
+    // when {
+    //     expression { return env.TERRAFORM_CHANGES == 'true' }
+    // }
     steps {
         dir(env.TERRAFORM_DIR) {
             script {
