@@ -4,6 +4,7 @@ pipeline {
     environment {
         TERRAFORM_DIR = "${WORKSPACE}/terraform"
         TERRAFORM_VERSION = "1.7.5" // You can adjust this version as needed
+        PATH = "${WORKSPACE}/bin:${env.PATH}"
     }
     
     stages {
@@ -16,8 +17,11 @@ pipeline {
         stage('Install Terraform') {
             steps {
                 script {
+                    // Create a bin directory in the workspace
+                    sh 'mkdir -p ${WORKSPACE}/bin'
+                    
                     // Check if Terraform is already installed
-                    def terraformInstalled = sh(script: 'terraform --version || echo "NOT_INSTALLED"', returnStdout: true)
+                    def terraformInstalled = sh(script: '${WORKSPACE}/bin/terraform --version || echo "NOT_INSTALLED"', returnStdout: true)
                     
                     if (terraformInstalled.contains("NOT_INSTALLED")) {
                         echo "Installing Terraform ${TERRAFORM_VERSION}"
@@ -30,19 +34,20 @@ pipeline {
                             sh "curl -o tmp/terraform.zip https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_windows_amd64.zip"
                             // Unzip and make available in PATH
                             sh 'unzip tmp/terraform.zip -d tmp'
-                            sh 'mv tmp/terraform.exe /usr/local/bin/ || mkdir -p /usr/local/bin/ && mv tmp/terraform.exe /usr/local/bin/'
+                            sh 'mv tmp/terraform.exe ${WORKSPACE}/bin/'
                             sh 'rm -rf tmp'
                         } else {
                             // For Linux
                             sh 'mkdir -p tmp'
                             sh "curl -o tmp/terraform.zip https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip"
                             sh 'unzip tmp/terraform.zip -d tmp'
-                            sh 'mv tmp/terraform /usr/local/bin/'
+                            sh 'mv tmp/terraform ${WORKSPACE}/bin/'
+                            sh 'chmod +x ${WORKSPACE}/bin/terraform'
                             sh 'rm -rf tmp'
                         }
                         
                         // Verify installation
-                        sh 'terraform --version'
+                        sh '${WORKSPACE}/bin/terraform --version'
                     } else {
                         echo "Terraform is already installed: ${terraformInstalled}"
                     }
@@ -75,7 +80,7 @@ pipeline {
             }
             steps {
                 dir(env.TERRAFORM_DIR) {
-                    sh 'terraform init'
+                    sh '${WORKSPACE}/bin/terraform init'
                 }
             }
         }
@@ -86,7 +91,7 @@ pipeline {
             }
             steps {
                 dir(env.TERRAFORM_DIR) {
-                    sh 'terraform plan -out=tfplan'
+                    sh '${WORKSPACE}/bin/terraform plan -out=tfplan'
                 }
             }
         }
@@ -106,7 +111,7 @@ pipeline {
             }
             steps {
                 dir(env.TERRAFORM_DIR) {
-                    sh 'terraform apply -auto-approve tfplan'
+                    sh '${WORKSPACE}/bin/terraform apply -auto-approve tfplan'
                 }
             }
         }
