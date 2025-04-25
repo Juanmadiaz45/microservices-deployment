@@ -3,12 +3,50 @@ pipeline {
     
     environment {
         TERRAFORM_DIR = "${WORKSPACE}/terraform"
+        TERRAFORM_VERSION = "1.7.5" // You can adjust this version as needed
     }
     
     stages {
         stage('Checkout') {
             steps {
                 checkout scm
+            }
+        }
+        
+        stage('Install Terraform') {
+            steps {
+                script {
+                    // Check if Terraform is already installed
+                    def terraformInstalled = sh(script: 'terraform --version || echo "NOT_INSTALLED"', returnStdout: true)
+                    
+                    if (terraformInstalled.contains("NOT_INSTALLED")) {
+                        echo "Installing Terraform ${TERRAFORM_VERSION}"
+                        
+                        // For Windows
+                        if (isUnix() == false) {
+                            // Create temp directory for download
+                            sh 'mkdir -p tmp'
+                            // Download Terraform
+                            sh "curl -o tmp/terraform.zip https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_windows_amd64.zip"
+                            // Unzip and make available in PATH
+                            sh 'unzip tmp/terraform.zip -d tmp'
+                            sh 'mv tmp/terraform.exe /usr/local/bin/ || mkdir -p /usr/local/bin/ && mv tmp/terraform.exe /usr/local/bin/'
+                            sh 'rm -rf tmp'
+                        } else {
+                            // For Linux
+                            sh 'mkdir -p tmp'
+                            sh "curl -o tmp/terraform.zip https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip"
+                            sh 'unzip tmp/terraform.zip -d tmp'
+                            sh 'mv tmp/terraform /usr/local/bin/'
+                            sh 'rm -rf tmp'
+                        }
+                        
+                        // Verify installation
+                        sh 'terraform --version'
+                    } else {
+                        echo "Terraform is already installed: ${terraformInstalled}"
+                    }
+                }
             }
         }
         
