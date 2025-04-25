@@ -2,3 +2,4 @@
 inventory/secrets.yml
 inventory/host_vars/
 inventory/host_vars/**
+roles/jenkins/vars/main.yml

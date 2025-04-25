@@ -28,6 +28,16 @@ credentials:
   system:
     domainCredentials:
       - credentials:
+          - string:
+              scope: GLOBAL
+              id: "AZURE_ADMIN_USERNAME"
+              secret: "{{ azure_admin_username }}"
+              description: "Azure Admin Username"
+          - string:
+              scope: GLOBAL
+              id: "AZURE_ADMIN_PASSWORD"
+              secret: "{{ azure_admin_password }}"
+              description: "Azure Admin Password"
           - usernamePassword:
               scope: GLOBAL
               id: "{{ credentials_id }}"
