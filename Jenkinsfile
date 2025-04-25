@@ -16,7 +16,7 @@ pipeline {
             steps {
                 script {
                     def changes = sh(
-                        script: "git diff --name-only HEAD^ HEAD | grep -E '^terraform/.*\\.tf$' || echo ''",
+                        script: "git diff --name-only HEAD^ HEAD | grep -E '^terraform/.*\\.tf\\$' || echo ''",
                         returnStdout: true
                     ).trim()
                     
