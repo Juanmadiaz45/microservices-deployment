@@ -156,16 +156,36 @@ pipeline {
             }
         }
         
-        stage('Terraform Init') {
-            when {
-                expression { return env.TERRAFORM_CHANGES == 'true' }
-            }
-            steps {
-                dir(env.TERRAFORM_DIR) {
-                    sh '${WORKSPACE}/bin/terraform init'
+        stage('Terraform Init and Import') {
+    when {
+        expression { return env.TERRAFORM_CHANGES == 'true' }
+    }
+    steps {
+        dir(env.TERRAFORM_DIR) {
+            script {
+                // Inicializar Terraform
+                sh '${WORKSPACE}/bin/terraform init'
+
+                // Verificar si el recurso ya está en el estado
+                def resourceExists = sh(
+                    script: '${WORKSPACE}/bin/terraform state list azurerm_resource_group.microservicesrg || echo "NOT_IMPORTED"',
+                    returnStdout: true
+                ).trim()
+
+                if (resourceExists == "NOT_IMPORTED") {
+                    echo "Importando el grupo de recursos existente al estado de Terraform..."
+                    sh '''
+                        ${WORKSPACE}/bin/terraform import \
+                        azurerm_resource_group.microservicesrg \
+                        /subscriptions/${AZURE_SUBSCRIPTION_ID}/resourceGroups/microservicesrg
+                    '''
+                } else {
+                    echo "El grupo de recursos ya está gestionado por Terraform."
                 }
             }
         }
+    }
+}
         
         stage('Terraform Plan') {
             when {
