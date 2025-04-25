@@ -193,9 +193,9 @@ pipeline {
 }
         
         stage('Terraform Plan') {
-            when {
-                expression { return env.TERRAFORM_CHANGES == 'true' }
-            }
+            // when {
+            //     expression { return env.TERRAFORM_CHANGES == 'true' }
+            // }
             steps {
                 dir(env.TERRAFORM_DIR) {
                     sh '''
@@ -213,9 +213,9 @@ pipeline {
         }
         
         stage('Approval') {
-            when {
-                expression { return env.TERRAFORM_CHANGES == 'true' }
-            }
+            // when {
+            //     expression { return env.TERRAFORM_CHANGES == 'true' }
+            // }
             steps {
                 dir(env.TERRAFORM_DIR) {
                     sh '${WORKSPACE}/bin/terraform apply -auto-approve tfplan'
@@ -224,9 +224,9 @@ pipeline {
         }
         
         stage('Terraform Apply') {
-            when {
-                expression { return env.TERRAFORM_CHANGES == 'true' }
-            }
+            // when {
+            //     expression { return env.TERRAFORM_CHANGES == 'true' }
+            // }
             steps {
                 dir(env.TERRAFORM_DIR) {
                     sh '${WORKSPACE}/bin/terraform apply -auto-approve tfplan'
@@ -235,9 +235,9 @@ pipeline {
         }
         
         stage('Run Ansible') {
-            when {
-                expression { return env.TERRAFORM_CHANGES == 'true' }
-            }
+            // when {
+            //     expression { return env.TERRAFORM_CHANGES == 'true' }
+            // }
             steps {
                 dir("${WORKSPACE}/ansible") {
                     sh 'ansible-playbook -i inventory playbook.yml'
